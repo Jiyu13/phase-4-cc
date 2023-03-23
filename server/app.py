@@ -78,15 +78,15 @@ class GetRestaurantPizzas(Resource):
     def post(self):
         try:
             new_r_p = RestaurantPizza(
-                price=request.get_json()["price"],
-                pizza_id=request.get_json()["pizza_id"],
-                restaurant_id=request.get_json()["restaurant_id"]
+                price=request.get_json(force=True)["price"],
+                pizza_id=request.get_json(force=True)["pizza_id"],
+                restaurant_id=request.get_json(force=True)["restaurant_id"]
             )
+            
             db.session.add(new_r_p)
             db.session.commit()
 
-            pizza = Pizza.query.filter_by(id=new_r_p.pizza_id).first()
-            response = make_response(pizza.to_dict(), 201)
+            response = make_response(new_r_p.to_dict(), 201)
         except ValueError:
             message = {"error": "Invalid input"}
             response = make_response(message, 422)

@@ -23,14 +23,15 @@ class TestApp:
             db.session.commit()
             response = app.test_client().post(
                 '/restaurant_pizzas',
-                data={
+                data=json.dumps({
                     "price": 3,
                     "pizza_id": pizza.id,
                     "restaurant_id": restaurant.id,
-                }
+                })
             )
 
             rf = RestaurantPizza.query.filter_by(restaurant=restaurant).first()
+            print(response.json)
             assert response.json['price'] == 3
             assert response.status_code == 201
             assert response.content_type == 'application/json'
@@ -117,11 +118,12 @@ class TestApp:
             db.session.commit()
             response = app.test_client().post(
                 '/restaurant_pizzas',
-                data={
+                data=json.dumps({
                     "price": -1,
                     "pizza_id": pizza.id,
                     "restaurant_id": restaurant.id,
-                }
+                })
             ).json
-            
+
+            print(response)
             assert response['error'] == "Invalid input"

@@ -1,14 +1,14 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy_serializer import SerializerMixin
-from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import validates
 from sqlalchemy import MetaData
+from sqlalchemy.orm import validates
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy_serializer import SerializerMixin
 
 metadata = MetaData(naming_convention={
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
 })
 
-db = SQLAlchemy(metadata=metadata)
+db = SQLAlchemy(metadata = metadata)
 
 # Add models here
 class Pizza(db.Model, SerializerMixin):
@@ -66,11 +66,17 @@ class RestaurantPizza(db.Model, SerializerMixin):
 
     @validates("price")
     def validate_price(self, key, price):
-        # if not price or not 1 <= price <= 30:
-        if price < 1 or  price > 30:
+        if not price or not 1 <= price <= 30:
+        # if price < 1 or  price > 30:
             raise ValueError("must have a price between 1 and 30")
         return price
 
 
     def __repr__(self):
         return f"""<RestaurantPizza {self.id}; Price: {self.price}.>"""
+
+    # @validates('price')
+    # def validates_strength(self, key, strength):
+    #     if not strength == 'Strong' and not strength == 'Weak' and not strength == 'Average':
+    #         raise ValueError("Strength must be Strong, Weak, or Average")
+    #     return strength
