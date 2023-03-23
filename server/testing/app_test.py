@@ -123,5 +123,5 @@ class TestApp:
                     "restaurant_id": restaurant.id,
                 }
             ).json
-
+            
             assert response['error'] == "Invalid input"
