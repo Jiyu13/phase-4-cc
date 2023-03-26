@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from flask import Flask, make_response, jsonify, request
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
@@ -21,81 +19,93 @@ api = Api(app)
 def index():
     return '<h1>Code challenge</h1>'
 
-# @app.route('/restaurants')
-# def restaurants():
+@app.route('/restaurants', methods = ['GET'])
+def restaurants():
+    restaurants = Restaurant.query.all()
+    restaurants_dict = [restaurant.to_dict() for restaurant in restaurants]
 
-#     pass
+    response = make_response(
+        jsonify(restaurants_dict),
+        200
+    )
 
-class GetRestaurants(Resource):
-    def get(self):
-        restaurants = Restaurant.query.all()
-        restaurants_dict = [restaurant.to_dict(rules=("-restaurant_pizzas",)) for restaurant in restaurants]
-        response = make_response(restaurants_dict, 200)
-        return response
-api.add_resource(GetRestaurants, "/restaurants")
+    return response
 
-
-class GetRestaurantByID(Resource):
-    def get(self, id):
-        restaurant = Restaurant.query.filter_by(id=id).first()
-        if not restaurant:
-            message = {"error": "Restaurant not found"}
-            return make_response(message, 404)
-        restaurant_dict = restaurant.to_dict(rules=("-restaurant_pizzas", "pizzas"))
-        response = make_response(restaurant_dict, 200)
-        return response
+@app.route('/restaurants/<int:id>', methods = ['GET', 'DELETE'])
+def restaurantByID(id):
+    restaurant = Restaurant.query.filter_by(id = id).first()
     
-    def delete(self, id):
-        restaurant = Restaurant.query.filter_by(id=id).first()
-        if not restaurant:
-            message = {"error": "Restaurant not found"}
-            return make_response(message, 404)
-        db.session.delete(restaurant)
-        db.session.commit()
-        message = {"message": "Restaurant has been deleted successfully"}
-        return make_response(message, 200)
+    if restaurant:
 
-api.add_resource(GetRestaurantByID, "/restaurants/<int:id>")
+        if request.method == 'GET':
 
+            restaurant_dict = restaurant.to_dict()
 
-class GetPizzas(Resource):
-    def get(self):
-        pizzas = Restaurant.query.all()
-        pizzas_dict = [pizza.to_dict(rules=("-restaurant_pizzas",)) for pizza in pizzas]
-        response = make_response(pizzas_dict, 200)
-        return response
-api.add_resource(GetPizzas, "/pizzas")
-
-
-class GetRestaurantPizzas(Resource):
-    def get(self):
-        r_pizzas = RestaurantPizza.query.all()
-        r_pizzas_dict = [r_pizza.to_dict(rules=("-pizza.restaurant_pizzas",)) for r_pizza in r_pizzas]
-        response = make_response(r_pizzas_dict, 200)
-        return response
-
-    
-    def post(self):
-        try:
-            new_r_p = RestaurantPizza(
-                price=request.get_json(force=True)["price"],
-                pizza_id=request.get_json(force=True)["pizza_id"],
-                restaurant_id=request.get_json(force=True)["restaurant_id"]
+            response = make_response(
+                jsonify(restaurant_dict),
+                200
             )
-            
-            db.session.add(new_r_p)
+
+        elif request.method == 'DELETE':
+
+            db.session.delete(restaurant)
             db.session.commit()
 
-            response = make_response(new_r_p.to_dict(), 201)
-        except ValueError:
-            message = {"error": "Invalid input"}
-            response = make_response(message, 422)
-        return response
+            response = make_response(
+                {},
+                200
+            )
 
-api.add_resource(GetRestaurantPizzas, "/restaurant_pizzas")
+    else:
 
+        response = make_response(
+            { "error": "Restaurant not found" },
+            404
+        )
 
+    return response
 
+@app.route('/pizzas', methods = ['GET'])
+def pizzas():
+    pizzas = Pizza.query.all()
+    pizzas_dict = [pizza.to_dict() for pizza in pizzas]
+
+    response = make_response(
+        jsonify(pizzas_dict),
+        200
+    )
+
+    return response
+
+@app.route('/restaurant_pizzas', methods = ['POST'])
+def restaurantPizzas():
+    try:
+
+        new_restaurant_pizza = RestaurantPizza(
+            price = request.get_json()['price'],
+            pizza_id = request.get_json()['pizza_id'],
+            restaurant_id = request.get_json()['restaurant_id']
+        )
+
+        db.session.add(new_restaurant_pizza)
+        db.session.commit()
+
+        associated_pizza = Pizza.query.filter(Pizza.id == new_restaurant_pizza.pizza_id).first()
+        associated_pizza_dict = associated_pizza.to_dict()
+
+        response = make_response(
+            jsonify(associated_pizza_dict),
+            201
+        )
+
+    except ValueError:
+
+        response = make_response(
+            { "errors": ["validation errors"] },
+            400
+        )
+
+    return response
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
